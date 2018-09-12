@@ -44,8 +44,11 @@ public function generateSyncPaths() {
 	$storagePool = $this->_CONFIG['lxd']['poolname'];
 	$path = $lxdPoolPath.$storagePool."/containers/";
 	$runningContainers = $this->lxd_info->listRunningContainers();
-	
-	var_dump($runningContainers);
+	$fqPaths = array();
+	foreach ($runningContainers as $container) {
+		array_push($fqPaths, $path.$container."/rootfs");
+	}	
+	var_dump($fqPaths);
 }
 
 
