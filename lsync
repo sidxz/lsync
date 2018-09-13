@@ -13,18 +13,49 @@
 */
 
 include_once('lxd_sync.php');
-
 $shortopts  = "";
-$shortopts .= "s::"; // These options do not accept values
-
 $longopts  = array(
-    "sync::"     // Required value
+    "sync-all::",
+    "help::"
 );
 $options = getopt($shortopts, $longopts);
 #var_dump($options);
 
+if (isset($options["help"])) {
+    help();
+    exit(0);
+}
+
+
 $lxd_sync = new LXD_SYNC();
-$containerPaths = $lxd_sync->generateSyncPaths();
-$lxd_sync->startSync($containerPaths);
+if (isset($options["sync-all"])) {
+    $lxd_sync->startSync();
+    exit(0);
+}
+
+printf('Please run with parameters'.PHP_EOL);
+printf('use flags --help          : To get this help'.PHP_EOL);
+
+
+
+
+
+
+
+
+function help() {
+exec('clear');
+printf ('lsync(1) LXD-SYNC'.PHP_EOL.PHP_EOL.PHP_EOL);
+printf ('NAME'.PHP_EOL);
+printf ('   lsync - sync containers frorm primary servers to a secondary server'.PHP_EOL.PHP_EOL.PHP_EOL);
+printf ('AUTHOR'.PHP_EOL);
+printf ('   Siddhant Rath | sid@tamu.edu | github.com/sidxz'.PHP_EOL.PHP_EOL.PHP_EOL);
+printf('DESCRIPTION'.PHP_EOL);
+printf('        --help          : Get this help message'.PHP_EOL);
+printf('        --sync-all      : Sync all containers as per /etc/lxd_sync.conf file'.PHP_EOL);
+
+
+
+}
 ?>
 
