@@ -35,34 +35,54 @@ public function __construct() {
 }
 
 public function getMountedPools() {
-	$storage_pool = $this->_CONFIG['lxd']['poolname'];
+	$storage_pool = $this->_CONFIG['primary_server']['poolName'];
 	$cmd = "zfs list | grep '/var/lib/lxd/storage-pools/".$storage_pool."/containers/' | awk '{print $5}'";
 	$output = shell_exec($cmd);
 	$output = explode("\n", $output);
-	var_dump($output);
+	return $output;
 }
 
-public function generateSyncPaths() {
-	$lxdPoolPath = $this->_CONFIG['lxd']['lxdPoolPath'];
-	$storagePool = $this->_CONFIG['lxd']['poolname'];
+public function generateSyncFromPath($containerName) {
+	if ($containerName == null) die("Expected Container Name in generateSyncFromPath()");
+	$lxdPoolPath = $this->_CONFIG['primary_server']['lxdPoolPath'];
+	$storagePool = $this->_CONFIG['primary_server']['poolName'];
 	$path = $lxdPoolPath.$storagePool."/containers/";
+	#$runningContainers = $this->lxd_info->listRunningContainers();
+	return $path.$containerName."/rootfs/";
+}
+
+public function generateSyncToPath($containerName) {
+	if ($containerName == null) die("Expected Container Name in generateSyncToPath()");
+	$lxdPoolPath = $this->_CONFIG['backup_server']['lxdPoolPath'];
+	$storagePool = $this->_CONFIG['backup_server']['poolName'];
+	$path = $lxdPoolPath.$storagePool."/containers/";
+	#$runningContainers = $this->lxd_info->listRunningContainers();
+	return $path.$containerName."/rootfs/";
+}
+
+
+
+public function startSync() {
+	#Get Running Containers
 	$runningContainers = $this->lxd_info->listRunningContainers();
-	$fqPaths = array();
-	foreach ($runningContainers as $container) {
-		array_push($fqPaths, $path.$container."/rootfs/");
-	}	
-	return $fqPaths;
-}
+	$result = array();
+	foreach($runningContainers as $containerName) {
+		#Generate ZFS Datata Set Path
+		$dataSet = $this->lxd_info->generateRemoteContainetZFSDataset($containerName);
 
-public function mountRemoteFS($container) {
+		# mount remote zfs dataset
+		if(!$this->transferd->mountRemoteZFS($dataSet)) break;
 
+		#generate paths
+		$syncFromPath = $this->generateSyncFromPath($containerName);
+		$syncToPath = $this->generateSyncToPath($containerName);
 
-}
+		#sync
+		$this->transferd->startSync($syncFromPath, $syncToPath);
 
+	}
 
-public function startSync($fqPaths) {
-	if ($fqPaths == null) return false;
-	$this->transferd->startSync($fqPaths);
+	
 
 }
 
@@ -72,9 +92,4 @@ var_dump($this->_CONFIG);
 }
 }
 
-
-#$lsyn = new LXD_SYNC();
-#$lsyn->generateSyncPaths();
-#$lsyn->getMountedPools();
-
-
+?>

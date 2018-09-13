@@ -1,0 +1,23 @@
+;
+;; LXD-SYNC AUTHOR sid@tamu.edu
+; This file should be placed at /etc/lxd_sync.conf
+;
+
+[primary_server]
+;LXD Configurations on host that needs to be backed up
+lxdPoolPath = "/var/lib/lxd/storage-pools/"
+poolName = "lxd-storage-pool-1"
+
+
+[ssh]
+;SSH user: this account should have sudo with no password
+username = "zbackup"
+key = "/home/zbackup/.ssh/id_rsa"
+
+
+[backup_server]
+;Configuration of the backup Server
+lxdPoolPath = "/var/lib/lxd/storage-pools/"
+server_fqdn = "host23-bak-rmz1156-dc78.snet"
+zfs_dataset = "zfs-bucket-1/lxd"
+poolName = "lxd-storage-pool-1"

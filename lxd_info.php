@@ -14,10 +14,18 @@
 
 class LXD_INFO {
 
+private $_CONFIG;
+
+public function __construct() {
+	$iniPath="/etc/lxd_sync.conf";
+	if(!file_exists($iniPath)) die("LXD-SYNC:[FATAL] Configuration File not Found : {$iniPath}");
+	$this->_CONFIG = parse_ini_file($iniPath, true);
+}
+
 public function listRunningContainers() {
 
-        $cmd = "lxc list --format json";
-        $output = shell_exec($cmd);
+  	$cmd = "lxc list --format json";
+  	$output = shell_exec($cmd);
 	$array_output = json_decode($output, true);
 	$runningContainers = array();	
 	#var_dump($array_output); 
@@ -29,7 +37,24 @@ public function listRunningContainers() {
 	#var_dump($runningContainers);
 	return $runningContainers;
 }
+
+public function isContainerRunning($containerName) {
+	# Basic Checks
+	if ($containerName == null) die("Expected Container Name in isContainerRunning()");
+
+	$cmd = "lxc list {$containerName} --format json";
+  	$output = shell_exec($cmd);
+	$array_output = json_decode($output, true);
+	if (empty($array_output)) return false;
+	return strcmp($array_output[0]['status'], "Running")==0?true:false;
 }
 
-#$lxd_info = new LXD_INFO();
-#$lxd_info-> listRunningContainers();
+public function generateRemoteContainetZFSDataset($containerName) {
+	if ($containerName == null) die("Expected Container Name in generateRemoteContainetZFSDataset");
+	return $this->_CONFIG['backup_server']['zfs_dataset'].'/containers/'.$containerName;
+}
+
+
+}
+
+?>

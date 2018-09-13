@@ -31,8 +31,9 @@ public function __construct() {
 
 public function getRemoteRsyncPath() {
 	$backupServer = $this->_CONFIG['backup_server']['server_fqdn'];
-        $sshUser = $this->_CONFIG['ssh']['username'];
-        $sshKey = $this->_CONFIG['ssh']['key'];
+    $sshUser = $this->_CONFIG['ssh']['username'];
+	$sshKey = $this->_CONFIG['ssh']['key'];
+	
 	$cmd = 'ssh -i '.$sshKey.' '.$sshUser.'@'.$backupServer.' which rsync';
 	$remoteRsyncPath= exec($cmd);
 	printf("[INFO] Remote rsync is at ".$remoteRsyncPath.PHP_EOL);
@@ -46,21 +47,52 @@ public function getServerRsyncPath() {
 	return $serverRsyncPath;
 	
 }
-public function startSync($syncPaths) {
+
+
+public function mountRemoteZFS($ZFSDataset) {
+	if ($ZFSDataset == null) die("Expected ZFS Dataset  in mountRemoteZFS");
+
+	$backupServer = $this->_CONFIG['backup_server']['server_fqdn'];
+    $sshUser = $this->_CONFIG['ssh']['username'];
+	$sshKey = $this->_CONFIG['ssh']['key'];
+
+	$cmd = 'ssh -i '.$sshKey.' '.$sshUser.'@'.$backupServer.' sudo zfs mount '.$ZFSDataset;
+	$result = exec($cmd.' 2>&1');
+
+	#Possible Outputs
+	# filesystem already mounted -> OK
+	# dataset does not exist
+	# null -> OK
+	
+	if (strlen($result) == 0) return true;
+	if (strpos($result, 'filesystem already mounted') !== false) return true;
+
+	return false;
+
+}
+
+public function startSync($syncFromPath, $syncToPath) {
+	if ($syncFromPath == null) die("Expected syncFromPath  in startSync");
+	if ($syncToPath == null) die("Expected syncToPath  in startSync");
+
 	$backupServer = $this->_CONFIG['backup_server']['server_fqdn'];
 	$sshUser = $this->_CONFIG['ssh']['username'];
 	$sshKey = $this->_CONFIG['ssh']['key'];
 	$serverRsync = $this->getServerRsyncPath();
 	$remoteRsync = $this->getRemoteRsyncPath();
 
-	#create rsync commands
-	foreach($syncPaths as $syncPath) {
-	printf("[SYNCING] ".$syncPath.PHP_EOL);
-	$cmd = $serverRsync.' -ah -e "ssh -i '.$sshKey.'" --rsync-path="sudo '.$remoteRsync.'" '.$syncPath.' '.$sshUser.'@'.$backupServer.':'.$syncPath;
+	#create rsync command
 	
-	exec($cmd);
-	printf("[DONE]".PHP_EOL);
+	$cmd = $serverRsync.' -ah -e "ssh -i '.$sshKey.'" --rsync-path="sudo '.$remoteRsync.'" '.$syncFromPath.' '.$sshUser.'@'.$backupServer.':'.$syncFromPath;
+	printf($cmd);
+	exec($cmd, $retArr, $retVal);
+	if ($retVal != 0) {
+		printf("[FAILED] ".PHP_EOL);
 	}
+	else {
+		printf("[SUCCESS]".PHP_EOL);
+	}
+	
 }
 
 public function stratAsync($syncPaths) {
@@ -70,7 +102,4 @@ public function stratAsync($syncPaths) {
 
 } #END OF CLASS TRANSFERD
 
-#$transferD = new TRANSFERD();
-#$transferD->getRemoteRsyncPath();
-#$transferD->startSync(['/test/cont1/','/test/cont2/']);
 ?>
