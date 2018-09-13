@@ -1,0 +1,30 @@
+#!/usr/bin/php
+<?php
+/**
+*   LSYNC. This module is responsible for user interaction and flow of control
+*
+* PHP Version 5
+*
+* @file     lxd-sync/main.php
+* @category Sync two lxd servers
+* @package  lxd-sync
+* @author   Siddhant Rath <sid@tamu.edu>
+* @license  http://www.apache.org/licenses/LICENSE-2.0  Apache License 2.0
+*/
+
+include_once('lxd_sync.php');
+
+$shortopts  = "";
+$shortopts .= "s::"; // These options do not accept values
+
+$longopts  = array(
+    "sync::"     // Required value
+);
+$options = getopt($shortopts, $longopts);
+#var_dump($options);
+
+$lxd_sync = new LXD_SYNC();
+$containerPaths = $lxd_sync->generateSyncPaths();
+$lxd_sync->startSync($containerPaths);
+?>
+
